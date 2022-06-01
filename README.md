@@ -43,20 +43,12 @@ Example 1:
 #include <assert.h>
 
 static void
-test(vla_handle_t handle) {
-	vla_using(p, int, handle, NULL);
-	for (i=0;i<1000;i++) {
-		assert(p[i] == i);
-	}
-	// Do not close p
-}
-
-static void
 init(vla_handle_t handle) {
 	vla_using(p, int, handle, NULL);
 	for (i=0;i<1000;i++) {
 		vla_push(p, i);
 	}
+	// Do not close p
 }
 
 int
@@ -70,8 +62,10 @@ main() {
 
 	assert(vla_size(p) == 1000);
 
-	test(handle);
-
+	int i;
+	for (i=0;i<1000;i++) {
+		assert(p[i] == i);
+	}
 
 	vla_close(p);	// close before return
 
