@@ -10,12 +10,12 @@
 #define VLA_TYPE_NEEDCLOSE 0x10
 #define VLA_COMMON_HEADER int type; int n; int cap;
 
+#define VLA_STACK_SIZE ((int)(128 * sizeof(void *)))
+
 struct vla_header { VLA_COMMON_HEADER };
 struct vla_stack;
 struct vla_heap;
 struct vla_lua;
-
-#define VLA_STACK_SIZE ((int)(128 * sizeof(void *) - sizeof(struct vla_header)))
 
 union vla_handle {
 	struct vla_header *h;
@@ -28,8 +28,8 @@ typedef union vla_handle vla_handle_t;
 
 struct vla_stack {
 	VLA_COMMON_HEADER
-	unsigned char buffer[VLA_STACK_SIZE];
 	vla_handle_t extra;
+	unsigned char buffer[VLA_STACK_SIZE];
 };
 
 static inline vla_handle_t
