@@ -5,7 +5,7 @@ Variant Length Array for C
 
 ```C
 // Create a VLA object with name and type on C stack.
-void vla_stack_handle(name, type);
+vla_stack_handle(handle_name, type);
 
 // Create a VLA object with type in Lua memory. (Or C heap when L == NULL)
 vla_handle_t vla_new(type, n, L);

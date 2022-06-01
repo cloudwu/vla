@@ -72,7 +72,7 @@ int vla_init_lua_(void *L);
 	if (L) { name##_lua_ = vla_init_lua_(L); } \
 	vla_using_(h, (void **)&name)
 
-#define vla_sync(name) vla_using_( *name##_ref_, (void **)&name)
+#define vla_sync(name) vla_handle_map_( *name##_ref_, (void **)&name)
 
 void vla_handle_close_(vla_handle_t h);
 
