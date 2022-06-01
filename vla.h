@@ -70,6 +70,8 @@ vla_using_(vla_handle_t h, void **p) {
 	if (L) { lua_pushnil(L); name##_lua_ = lua_gettop(L); } \
 	vla_using_(h, (void **)&name)
 
+#define vla_sync(name) vla_using_( *name##_ref_, (void **)&name)
+
 void vla_handle_close_(vla_handle_t h);
 
 static inline void

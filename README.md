@@ -14,6 +14,9 @@ vla_handle_t vla_new(type, n, L);
 // You can use the accessor to access the data of VLA, it's just a raw pointer of the data.
 void vla_using(name, type, handle, L);
 
+// Sync accessor if VLA object changes
+void vla_sync(name);
+
 // Close VLA object via accessor
 void vla_close(name);
 
@@ -39,20 +42,38 @@ Example 1:
 #include "vla.h"
 #include <assert.h>
 
-int
-main() {
-	vla_stack_handle(handle, int);	// Create an int array
-	vla_using(p, int, handle, NULL);	// Create an acessor int *p for data accessing.
-	int i;
-	for (i=0;i<1000;i++) {
-		vla_push(p, i);
-	}
-	assert(vla_size(p) == 1000);
-
+static void
+test(vla_handle_t handle) {
+	vla_using(p, int, handle, NULL);
 	for (i=0;i<1000;i++) {
 		assert(p[i] == i);
 	}
-	vla_close(p);
+	// Do not close p
+}
+
+static void
+init(vla_handle_t handle) {
+	vla_using(p, int, handle, NULL);
+	for (i=0;i<1000;i++) {
+		vla_push(p, i);
+	}
+}
+
+int
+main() {
+	vla_stack_handle(handle, int);	// Create an int array on stack
+	vla_using(p, int, handle, NULL);	// Create an acessor int *p for data accessing.
+
+	init(handle);
+
+	vla_sync(p);	// init() may changes array
+
+	assert(vla_size(p) == 1000);
+
+	test(handle);
+
+
+	vla_close(p);	// close before return
 
 	return 0;
 }
