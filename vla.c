@@ -65,6 +65,13 @@ vla_resize_heap(struct vla_heap *h, int n, int esize) {
 	return h;
 }
 
+int
+vla_init_lua_(void *L_) {
+	lua_State *L = (lua_State *)L_;
+	lua_pushnil(L);
+	return lua_gettop(L);
+}
+
 static inline void
 vla_map_heap(struct vla_heap *h, void **p) {
 	*p = (void *)h->buffer;

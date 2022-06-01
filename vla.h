@@ -63,11 +63,13 @@ vla_using_(vla_handle_t h, void **p) {
 
 }
 
+int vla_init_lua_(void *L);
+
 #define vla_using(name, type, h, L) \
 	type * name; \
 	vla_handle_t * name##_ref_ = &h; \
 	int name##_lua_ = 0; (void) name##_lua_; \
-	if (L) { lua_pushnil(L); name##_lua_ = lua_gettop(L); } \
+	if (L) { name##_lua_ = vla_init_lua_(L); } \
 	vla_using_(h, (void **)&name)
 
 #define vla_sync(name) vla_using_( *name##_ref_, (void **)&name)

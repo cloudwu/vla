@@ -45,8 +45,9 @@ Example 1:
 static void
 init(vla_handle_t handle) {
 	vla_using(p, int, handle, NULL);
+	int i;
 	for (i=0;i<1000;i++) {
-		vla_push(p, i);
+		vla_push(p, i, NULL);
 	}
 	// Do not close p
 }
