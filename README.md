@@ -1,4 +1,4 @@
-Variant Length Array for C
+Variable Length Array for C
 ====================
 
 `vla_handle_t` : A handle of VLA object , it can be passed into C functions or be saved in the C structs.
