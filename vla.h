@@ -3,19 +3,19 @@
 
 #include <stddef.h>
 
-#define VLA_STACK_SIZE 244
-
 #define VLA_TYPE_STACK 0
 #define VLA_TYPE_HEAP 1
 #define VLA_TYPE_LUA 2
 #define VLA_TYPE_MASK 0xf
 #define VLA_TYPE_NEEDCLOSE 0x10
-#define VLA_COMMON_HEADER int type;	int n; int cap;
+#define VLA_COMMON_HEADER int type; int n; int cap;
 
 struct vla_header { VLA_COMMON_HEADER };
 struct vla_stack;
 struct vla_heap;
 struct vla_lua;
+
+#define VLA_STACK_SIZE ((int)(128 * sizeof(void *) - sizeof(struct vla_header)))
 
 union vla_handle {
 	struct vla_header *h;
