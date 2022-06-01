@@ -3,64 +3,102 @@
 
 #include <stddef.h>
 
-#define VLA_STACK_SIZE 240
+#define VLA_STACK_SIZE 244
 
-struct vla_handle { void * ptr; };
+#define VLA_TYPE_STACK 0
+#define VLA_TYPE_HEAP 1
+#define VLA_TYPE_LUA 2
+#define VLA_TYPE_MASK 0xf
+#define VLA_TYPE_NEEDCLOSE 0x10
+#define VLA_COMMON_HEADER int type;	int n; int cap;
 
-struct vla_stack_ {
-	struct vla_handle *ref;
-	int n;
-	unsigned char buffer[VLA_STACK_SIZE];	
+struct vla_header { VLA_COMMON_HEADER };
+struct vla_stack;
+struct vla_heap;
+struct vla_lua;
+
+union vla_handle {
+	struct vla_header *h;
+	struct vla_stack *s;
+	struct vla_heap *m;
+	struct vla_lua *l;
 };
 
-struct vla_accessor_ {
-	void **p;
-	int *n;
-	int cap;
-	struct vla_handle h;
+typedef union vla_handle vla_handle_t;
+
+struct vla_stack {
+	VLA_COMMON_HEADER
+	unsigned char buffer[VLA_STACK_SIZE];
+	vla_handle_t extra;
 };
 
-#define vla_open(name, type, n) \
-	type *name; \
-	struct vla_stack_ name##_stack_; \
-	struct vla_accessor_ name##_accessor_; \
-	vla_init_stack_((void **)&name, &name##_stack_, &name##_accessor_, n, sizeof(type))
-
-#define vla_size(name) (*name##_accessor_.n)
-
-#define vla_resize(name, sz) vla_resize_(&name##_accessor_, sz, sizeof(*name))
-
-void vla_resize_internal(struct vla_accessor_ *acc, int sz, int esize);
-
-static inline void
-vla_resize_(struct vla_accessor_ *acc, int sz, int esize) {
-	if (sz <= acc->cap)
-		*acc->n = sz;
-	else
-		vla_resize_internal(acc, sz, esize);
-}
-
-static inline void
-vla_init_stack_(void **v, struct vla_stack_ *s, struct vla_accessor_ *acc, int n, int esize) {
-	acc->p = v;
-	acc->n = &s->n;
-	acc->cap = (VLA_STACK_SIZE + esize - 1)/ esize;
-	acc->h.ptr = NULL;
-	s->ref = &acc->h;
+static inline vla_handle_t
+vla_stack_new_(struct vla_stack *s, int esize) {
+	s->type = VLA_TYPE_STACK;
 	s->n = 0;
-	*v = s->buffer;
-	vla_resize_(acc, n, esize);
-}
+	s->cap = (VLA_STACK_SIZE + esize - 1) / esize;
+	s->extra.h = NULL;
+	vla_handle_t ret;
+	ret.s = s;
+	return ret;
+};
 
-#define vla_close(name) vla_close_(&name##_stack_)
+#define vla_stack_handle(name, type) \
+	struct vla_stack name##_stack_; \
+	vla_handle_t name = vla_stack_new_(&name##_stack_, sizeof(type))
 
-void vla_release_internal(struct vla_handle h);
+vla_handle_t vla_heap_new(int n, int esize);
+vla_handle_t vla_lua_new(void *L, int n, int esize);
+
+#define vla_new(type, n, L) (L == NULL ? vla_heap_new(n, sizeof(type)) : vla_lua_new(L, n, sizeof(type)))
+
+void vla_handle_map_(vla_handle_t h, void **p);
 
 static inline void
-vla_close_(struct vla_stack_ *s) {
-	if (s->ref->ptr == NULL)
-		return;
-	vla_release_internal(*s->ref);
+vla_using_(vla_handle_t h, void **p) {
+	if ((h.h->type & VLA_TYPE_MASK) == VLA_TYPE_STACK && h.s->extra.h == NULL)
+		*p = (void *)h.s->buffer;
+	else
+		vla_handle_map_(h, p);
+
 }
+
+#define vla_using(name, type, h, L) \
+	type * name; \
+	vla_handle_t * name##_ref_ = &h; \
+	int name##_lua_ = 0; (void) name##_lua_; \
+	if (L) { lua_pushnil(L); name##_lua_ = lua_gettop(L); } \
+	vla_using_(h, (void **)&name)
+
+void vla_handle_close_(vla_handle_t h);
+
+static inline void
+vla_close_handle(vla_handle_t h) {
+	if (h.h && (h.h->type & VLA_TYPE_NEEDCLOSE)) {
+		vla_handle_close_(h);
+	}
+}
+
+#define vla_close(name) vla_close_handle(*name##_ref_)
+
+void vla_handle_resize_(void *L, vla_handle_t *h, int n, int esize, int *lua_id);
+
+static inline void
+vla_resize_(void *L, void **p, vla_handle_t *h, int n, int esize, int *lua_id) {
+	if (n <= h->h->cap)
+		h->h->n = n;
+	else {
+		vla_handle_resize_(L, h, n, esize, lua_id);
+		vla_handle_map_(*h, p);
+	}
+}
+
+#define vla_resize(name, n, L) vla_resize_(L, (void **)&name, name##_ref_, n, sizeof(*name), &name##_lua_)
+
+#define vla_size(name) (name##_ref_->h->n)
+
+#define vla_push(name, v, L) vla_resize(name, vla_size(name) + 1, L); name[vla_size(name)-1] = v
+
+#define vla_luaid(name, L) (lua_isnoneornil(L, name##_lua_) ? 0 : name##_lua_)
 
 #endif
