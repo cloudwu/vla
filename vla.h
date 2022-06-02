@@ -67,7 +67,7 @@ int vla_init_lua_(void *L);
 
 #define vla_using(name, type, h, L) \
 	type * name; \
-	vla_handle_t * name##_ref_ = &h; \
+	vla_handle_t * name##_ref_ = &h; (void) name##_ref_; \
 	int name##_lua_ = 0; (void) name##_lua_; \
 	if (L) { name##_lua_ = vla_init_lua_(L); } \
 	vla_using_(h, (void **)&name)
